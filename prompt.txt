@@ -1,0 +1,317 @@
+TASK: FIX THE BACKEND GEOGRAPHY DATA SO THE EXISTING KERALA MAP CAN RENDER REAL BOUNDARIES
+
+PROJECT:
+C:\Users\bhavik g\OneDrive\Documents\Desktop\CET PROJECT
+
+CURRENT VERIFIED ROOT CAUSE:
+
+The existing frontend KeralaMap.tsx is functioning correctly.
+
+Verified:
+- Leaflet is functioning.
+- Map initialization is functioning.
+- React lifecycle/cleanup is functioning.
+- Map container/CSS is not the root cause.
+- Frontend receives geography data.
+- KeralaMap.tsx expects geographic boundary geometries.
+- FastAPI currently returns Point geometries for:
+  /api/geography/kerala
+  /api/geography/districts
+  /api/geography/taluks
+- Leaflet therefore renders point markers instead of geographic boundary polygons.
+
+OBJECTIVE:
+
+Fix ONLY the backend geography source/API so the EXISTING frontend can receive REAL Kerala, district, and taluk boundary GeoJSON.
+
+DO NOT redesign the frontend.
+DO NOT rewrite KeralaMap.tsx.
+DO NOT replace Leaflet.
+DO NOT create fake polygons from points.
+DO NOT generate approximate boundaries mathematically.
+DO NOT fabricate coordinates.
+DO NOT invent taluk boundaries.
+DO NOT use circles around points as boundaries.
+DO NOT modify epidemiological surveillance data.
+DO NOT modify ML logic.
+DO NOT modify clusters/hotspots/epicentre.
+DO NOT modify HospitalPage.
+DO NOT redesign the dashboard.
+
+WORK MODE:
+
+DIAGNOSE REAL SOURCE → CONNECT REAL BOUNDARY DATA → MINIMUM API FIX → VERIFY → REPORT → STOP
+
+==================================================
+STEP 1 — LOCATE BACKEND
+==================================================
+
+Find the FastAPI backend used by the current frontend.
+
+Identify:
+- geography router
+- geography service
+- geography model/data source
+- existing GeoJSON handling
+- database tables/files used for geography
+- existing `/api/geography/kerala`
+- existing `/api/geography/districts`
+- existing `/api/geography/taluks`
+
+Do not assume file names.
+
+==================================================
+STEP 2 — INSPECT CURRENT RESPONSE
+==================================================
+
+Actually call/check:
+
+GET /api/geography/kerala
+GET /api/geography/districts
+GET /api/geography/taluks
+
+Confirm the actual response.
+
+Document:
+- geometry type
+- properties
+- coordinate structure
+- whether boundaries already exist somewhere else in the repository/database
+
+Current reported problem:
+geometry is Point.
+
+Verify this rather than blindly trusting the report.
+
+==================================================
+STEP 3 — SEARCH FOR EXISTING REAL BOUNDARIES
+==================================================
+
+Search the project for existing legitimate geographic boundary data.
+
+Look for:
+- GeoJSON
+- Shapefile
+- GeoPackage
+- TopoJSON
+- PostGIS geometry
+- district boundary files
+- taluk boundary files
+- Kerala administrative boundary datasets
+
+Use ONLY an existing legitimate boundary source if one is already present and appropriate.
+
+Do NOT use the existing latitude/longitude Point values to manufacture polygons.
+
+Do NOT create approximate polygons.
+
+==================================================
+STEP 4 — IF REAL BOUNDARIES ALREADY EXIST
+==================================================
+
+Connect the existing real boundary source to the FastAPI geography endpoints.
+
+Required geometry:
+
+Kerala:
+Polygon or MultiPolygon
+
+District:
+Polygon or MultiPolygon
+
+Taluk:
+Polygon or MultiPolygon
+
+Return valid GeoJSON FeatureCollections.
+
+Preserve useful properties such as:
+- district
+- district_id
+- taluk
+- taluk_id
+- name
+
+Use the identifiers expected by the existing frontend.
+
+Do not unnecessarily change the frontend contract.
+
+==================================================
+STEP 5 — IF NO REAL BOUNDARIES EXIST
+==================================================
+
+STOP.
+
+Do NOT fabricate geography.
+
+Report:
+
+"Real Kerala/district/taluk boundary geometry is not available in the current backend/project, so the map cannot be correctly fixed without adding an authoritative boundary dataset."
+
+Do not make speculative code changes.
+
+==================================================
+STEP 6 — DATA INTEGRITY
+==================================================
+
+The geography fix must NOT modify:
+- disease observations
+- cases
+- deaths
+- dates
+- surveillance records
+- disease names
+- epidemiological measurements
+- ML training data
+
+Geography is a separate concern.
+
+Do not rewrite or regenerate the surveillance dataset.
+
+==================================================
+STEP 7 — API CONTRACT
+==================================================
+
+Ensure the existing frontend can continue using its current geography API functions.
+
+Do NOT unnecessarily rename endpoints.
+
+Expected endpoints remain:
+
+/api/geography/kerala
+/api/geography/districts
+/api/geography/taluks
+
+The response must be valid GeoJSON.
+
+Expected structure:
+
+{
+  "type": "FeatureCollection",
+  "features": [...]
+}
+
+Each feature must have:
+
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon"
+  }
+}
+
+or:
+
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "MultiPolygon"
+  }
+}
+
+Taluk filtering must continue to work with the existing frontend API contract.
+
+==================================================
+STEP 8 — VERIFY REAL GEOMETRY
+==================================================
+
+Do not only check HTTP 200.
+
+Actually inspect responses.
+
+Verify:
+
+1. Kerala endpoint returns Polygon/MultiPolygon.
+2. District endpoint returns real district boundary features.
+3. Taluk endpoint returns real taluk boundary features.
+4. Coordinates are valid longitude/latitude geometry.
+5. Feature properties contain the identifiers/names needed by frontend.
+6. No Point geometry is being incorrectly used as a boundary.
+7. No fake geometry was generated.
+
+==================================================
+STEP 9 — FRONTEND VERIFICATION
+==================================================
+
+After backend fix, start the frontend and backend.
+
+Open the existing dashboard.
+
+Verify the existing KeralaMap renders:
+
+- Kerala boundary
+- district boundaries
+- taluk boundaries when selected
+- hover behavior
+- district selection
+- taluk selection
+- existing map filters
+- existing visualization modes
+
+Do not redesign any UI.
+
+The existing map implementation should be reused.
+
+==================================================
+STEP 10 — BUILD
+==================================================
+
+Run:
+
+npm run build
+
+If lint is already configured, run it once.
+
+Do not repeatedly run builds.
+
+==================================================
+TOKEN CONSERVATION
+==================================================
+
+Do not repeatedly reread files.
+
+Do not repeatedly call the same endpoint.
+
+Do not explore unrelated project areas.
+
+Do not modify code speculatively.
+
+Do not add new features.
+
+Do not redesign.
+
+Use:
+
+DIAGNOSE → MINIMUM FIX → VERIFY → REPORT → STOP
+
+==================================================
+ABSOLUTE STOP CONDITION
+==================================================
+
+STOP immediately if no authoritative real boundary dataset exists.
+
+Do not fabricate one.
+
+If a real boundary dataset exists, connect it with the minimum backend changes and verify the existing map.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return only:
+
+1. ROOT CAUSE
+2. REAL BOUNDARY SOURCE FOUND: YES/NO
+3. SOURCE LOCATION
+4. FILES CHANGED
+5. API ENDPOINTS FIXED
+6. GEOMETRY TYPE RETURNED
+7. REAL GEOJSON VERIFIED: YES/NO
+8. KERALA MAP RENDERS: YES/NO
+9. DISTRICT BOUNDARIES RENDER: YES/NO
+10. TALUK BOUNDARIES RENDER: YES/NO
+11. FAKE DATA USED: YES/NO
+12. BUILD: PASS/FAIL
+13. LINT: PASS/FAIL/NOT CONFIGURED
+14. REMAINING BLOCKER
+
+STOP AFTER THE REPORT.
