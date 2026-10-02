@@ -50,10 +50,15 @@ export const Badge = Object.assign(
         )}
         {...props}
       >
-        {dot && <span className={clsx('w-1.5 h-1.5 rounded-full', dotStyles[variant])} aria-hidden="true" />}
+        {dot && (
+          <span
+            className={clsx('w-1.5 h-1.5 rounded-full', dotStyles[variant])}
+            aria-hidden="true"
+          />
+        )}
         {children}
       </span>
-    )
+    );
   },
   { displayName: 'Badge' }
 ) as ForwardRefExoticComponent<BadgeProps & RefAttributes<HTMLSpanElement>>;

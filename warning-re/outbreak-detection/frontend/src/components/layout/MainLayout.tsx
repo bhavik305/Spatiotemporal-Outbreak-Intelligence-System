@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
+import { Sidebar } from './Sidebar';
 import { useState } from 'react';
 
 interface MainLayoutProps {
@@ -15,6 +16,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ cycleStatus, demoMode = false }: MainLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [viewMode, setViewMode] = useState<'public' | 'detailed'>('public');
 
   return (
@@ -26,10 +28,23 @@ export function MainLayout({ cycleStatus, demoMode = false }: MainLayoutProps) {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         demoMode={demoMode}
+        onSidebarToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isSidebarCollapsed={isSidebarCollapsed}
       />
-      <main className="flex-1 max-w-full mx-auto w-full px-4 md:px-6 lg:px-8 py-6">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex">
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+        <main
+          className="flex-1 max-w-full mx-auto w-full py-6 transition-all duration-300"
+          style={{ marginLeft: isSidebarCollapsed ? '5rem' : '16rem' }}
+        >
+          <div className="px-4 md:px-6 lg:px-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
       <footer className="border-t border-neutral-200 bg-white">
         <div className="max-w-full mx-auto px-4 md:px-6 lg:px-8 py-4">
           <p className="text-xs text-neutral-500 text-center">

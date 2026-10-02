@@ -11,17 +11,17 @@ interface CycleStatusCardProps {
 }
 
 const statusLabels: Record<CycleStatus, string> = {
-  OPEN_FOR_REPORTING: 'Open for Reporting',
+  REPORTING_OPEN: 'Open for Reporting',
+  REPORTING_CLOSED: 'Reporting Closed',
   PROCESSING: 'Processing',
-  ANALYSIS_READY: 'Analysis Ready',
-  CYCLE_CLOSED: 'Cycle Closed',
+  PUBLISHED: 'Published',
 };
 
 const statusVariants: Record<CycleStatus, 'success' | 'warning' | 'info' | 'neutral'> = {
-  OPEN_FOR_REPORTING: 'success',
+  REPORTING_OPEN: 'success',
+  REPORTING_CLOSED: 'neutral',
   PROCESSING: 'warning',
-  ANALYSIS_READY: 'info',
-  CYCLE_CLOSED: 'neutral',
+  PUBLISHED: 'info',
 };
 
 export function CycleStatusCard({ cycle, loading, error }: CycleStatusCardProps) {
@@ -64,7 +64,7 @@ export function CycleStatusCard({ cycle, loading, error }: CycleStatusCardProps)
   const endTime = new Date(cycle.endTime);
   const lastUpdate = cycle.lastUpdate ? new Date(cycle.lastUpdate) : null;
 
-  const isActive = cycle.status === 'OPEN_FOR_REPORTING' || cycle.status === 'PROCESSING';
+  const isActive = cycle.status === 'REPORTING_OPEN' || cycle.status === 'PROCESSING';
 
   return (
     <Card padding="md" className="border-l-4 border-primary-500">

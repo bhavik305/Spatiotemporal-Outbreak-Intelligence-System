@@ -1,63 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   DESIGN TOKENS — Professional palette
+   Deep navy, teal, healthcare green, amber, red
+   ======================================== */
+
 :root {
-  --color-primary-50: #f0f9f9;
-  --color-primary-100: #dcf0f0;
-  --color-primary-200: #bce0e0;
-  --color-primary-300: #8ccccc;
-  --color-primary-400: #5ab3b3;
-  --color-primary-500: #3a9a9a;
-  --color-primary-600: #2d7d7d;
-  --color-primary-700: #246363;
-  --color-primary-800: #204f4f;
-  --color-primary-900: #1e4141;
+  /* Primary — Deep navy / dark blue */
+  --color-primary-50: #f0f4f9;
+  --color-primary-100: #d9e2f1;
+  --color-primary-200: #b3c5e3;
+  --color-primary-300: #88a3d4;
+  --color-primary-400: #5f82c4;
+  --color-primary-500: #3e5e9b;
+  --color-primary-600: #2d4a7a;
+  --color-primary-700: #1f3a5e;
+  --color-primary-800: #142e4a;
+  --color-primary-900: #0b2037;
 
-  --color-neutral-0: #ffffff;
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f5f5f5;
-  --color-neutral-200: #e5e5e5;
-  --color-neutral-300: #d4d4d4;
-  --color-neutral-400: #a3a3a3;
-  --color-neutral-500: #737373;
-  --color-neutral-600: #525252;
-  --color-neutral-700: #404040;
-  --color-neutral-800: #262626;
-  --color-neutral-900: #171717;
+  /* Secondary — Teal */
+  --color-secondary-50: #f0fdfa;
+  --color-secondary-100: #d1f0ea;
+  --color-secondary-500: #2d8c7c;
+  --color-secondary-600: #247165;
+  --color-secondary-700: #1e5a52;
 
+  /* Success — Healthcare green */
   --color-success-50: #f0fdf4;
   --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
   --color-success-500: #22c55e;
   --color-success-600: #16a34a;
   --color-success-700: #15803d;
 
+  /* Warning — Amber */
   --color-warning-50: #fffbeb;
   --color-warning-100: #fef3c7;
   --color-warning-500: #f59e0b;
   --color-warning-600: #d97706;
   --color-warning-700: #b45309;
 
+  /* Error — Red */
   --color-error-50: #fef2f2;
   --color-error-100: #fee2e2;
   --color-error-500: #ef4444;
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
 
+  /* Info — Professional blue */
   --color-info-50: #eff6ff;
   --color-info-100: #dbeafe;
   --color-info-500: #3b82f6;
   --color-info-600: #2563eb;
   --color-info-700: #1d4ed8;
 
+  /* Neutral — Light blue-gray / charcoal */
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334159;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.1), 0 2px 4px -2px rgb(15 23 42 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.1), 0 4px 6px -4px rgb(15 23 42 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(15 23 42 / 0.1), 0 8px 10px -6px rgb(15 23 42 / 0.1);
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
 
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
@@ -87,134 +111,165 @@
   --panel-width: 380px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-neutral-0: #171717;
-    --color-neutral-50: #1e1e1e;
-    --color-neutral-100: #262626;
-    --color-neutral-200: #404040;
-    --color-neutral-300: #525252;
-    --color-neutral-400: #737373;
-    --color-neutral-500: #a3a3a3;
-    --color-neutral-600: #d4d4d4;
-    --color-neutral-700: #e5e5e5;
-    --color-neutral-800: #f5f5f5;
-    --color-neutral-900: #fafafa;
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-sans text-base text-neutral-900 bg-neutral-50 antialiased;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  #root {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    text-align: left;
+    border: none;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-neutral-900);
+  }
+
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+  h4 { font-size: var(--text-lg); }
+  h5 { font-size: var(--text-base); }
+  h6 { font-size: var(--text-sm); }
+
+  a {
+    @apply text-primary-600 transition-colors;
+  }
+
+  a:hover {
+    @apply text-primary-700;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--color-primary-600);
+    color: white;
+    padding: var(--space-2) var(--space-4);
+    z-index: 100;
+    transition: top var(--transition-fast);
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
+  @media (max-width: 768px) {
+    h1 { font-size: var(--text-2xl); }
+    h2 { font-size: var(--text-xl); }
+    h3 { font-size: var(--text-lg); }
   }
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer components {
+  .page-header {
+    @apply mb-6;
+  }
+
+  .page-header__title {
+    @apply text-3xl font-bold text-neutral-900 tracking-tight;
+  }
+
+  .page-header__subtitle {
+    @apply text-sm text-neutral-500 mt-1;
+  }
+
+  .stat-card {
+    @apply bg-white border border-neutral-200 rounded-xl p-6 shadow-sm;
+  }
+
+  .stat-card__label {
+    @apply text-xs font-semibold text-neutral-500 uppercase tracking-wider;
+  }
+
+  .stat-card__value {
+    @apply mt-2 text-3xl font-bold text-neutral-900;
+  }
+
+  .stat-card__supporting {
+    @apply mt-1 text-sm text-neutral-500;
+  }
+
+  .status-indicator {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .nav-indicator {
+    @apply absolute inset-0 -z-10 h-full w-full rounded-md bg-white shadow-sm opacity-0 transition-all duration-150 group-hover:opacity-100 group-data-[active=true]:opacity-100;
+  }
 }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@layer utilities {
+  .kerala-map-shell {
+    min-height: 32rem;
+  }
 
-body {
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
-  color: var(--color-neutral-900);
-  background-color: var(--color-neutral-50);
-  min-height: 100vh;
-}
+  @media (max-width: 767px) {
+    .kerala-map-shell {
+      min-height: 24rem;
+    }
+  }
 
-a {
-  color: var(--color-primary-600);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-a:hover {
-  color: var(--color-primary-700);
-}
-
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--color-primary-500);
-  outline-offset: 2px;
-}
-
-button {
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-}
-
-input, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
-}
-
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--color-primary-600);
-  color: white;
-  padding: var(--space-2) var(--space-4);
-  z-index: 100;
-  transition: top var(--transition-fast);
-}
-
-.skip-link:focus {
-  top: 0;
-}
-
-#root {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  text-align: left;
-  border: none;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--color-neutral-900);
-}
-
-h1 { font-size: var(--text-3xl); }
-h2 { font-size: var(--text-2xl); }
-h3 { font-size: var(--text-xl); }
-h4 { font-size: var(--text-lg); }
-h5 { font-size: var(--text-base); }
-h6 { font-size: var(--text-sm); }
-
-@media (max-width: 768px) {
-  h1 { font-size: var(--text-2xl); }
-  h2 { font-size: var(--text-xl); }
-  h3 { font-size: var(--text-lg); }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .kerala-map-shell {
+      min-height: 28rem;
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { fetchDistrictGeometry, fetchDistricts, fetchKeralaGeometry, fetchTalukGeometry, fetchTaluks } from '../../api/geography';
 import { fetchMapData, fetchClusters } from '../../api/intelligence';
 import type { District, Taluk, MapData, VisualizationMode, RiskLevel, Cluster } from '../../types';
@@ -137,6 +138,32 @@ function getClusterColor(): string {
   return '#155e63';
 }
 
+function getCentroid(geometry: Feature): [number, number] | null {
+  try {
+    const geom = geometry.geometry;
+    if (!geom || geom.type !== 'Polygon') return null;
+    const rings = geom.coordinates;
+    if (!rings || rings.length === 0) return null;
+    let totalLat = 0;
+    let totalLon = 0;
+    let count = 0;
+    for (const ring of rings) {
+      if (!Array.isArray(ring)) continue;
+      for (const point of ring) {
+        if (Array.isArray(point) && point.length >= 2 && typeof point[0] === 'number' && typeof point[1] === 'number') {
+          totalLon += point[0];
+          totalLat += point[1];
+          count++;
+        }
+      }
+    }
+    if (count === 0) return null;
+    return [totalLat / count, totalLon / count];
+  } catch {
+    return null;
+  }
+}
+
 export function KeralaMap({
   selectedDistrictId,
   selectedTalukId,
@@ -158,6 +185,7 @@ export function KeralaMap({
   const clusterLayerRef = useRef<L.LayerGroup | null>(null);
   const clusterLayersRef = useRef<Map<string, L.Layer>>(new Map());
   const hotspotLayerRef = useRef<L.LayerGroup | null>(null);
+  const epicentreLayerRef = useRef<L.LayerGroup | null>(null);
   const selectedDistrictIdRef = useRef(selectedDistrictId);
   const selectedTalukIdRef = useRef(selectedTalukId);
   const selectedDiseaseRef = useRef(selectedDisease);
@@ -227,6 +255,15 @@ export function KeralaMap({
     hotspotLayerRef.current = null;
   };
 
+  const clearEpicentreLayer = () => {
+    const map = mapRef.current;
+    const layer = epicentreLayerRef.current;
+    if (layer && map?.hasLayer(layer)) {
+      map.removeLayer(layer);
+    }
+    epicentreLayerRef.current = null;
+  };
+
   const clearTalukLayers = () => {
     const map = mapRef.current;
     talukLayersRef.current.forEach((layer) => {
@@ -291,6 +328,15 @@ export function KeralaMap({
         map = activeMap;
         mapRef.current = activeMap;
 
+        const NorthArrow = L.Control.extend({
+          onAdd: () => {
+            const div = L.DomUtil.create('div', 'leaflet-control-northarrow');
+            div.innerHTML = '<span class="northarrow__n">N</span>';
+            return div;
+          },
+        });
+        activeMap.addControl(new NorthArrow({ position: 'topright' }));
+
         keralaLayer = L.geoJSON(keralaGeometry, { interactive: false, style: keralaStyle });
         keralaLayer.addTo(activeMap);
         keralaLayerRef.current = keralaLayer;
@@ -319,6 +365,27 @@ export function KeralaMap({
           districtLayer.addTo(activeMap);
           districtLayers.set(district.id, districtLayer);
         });
+
+        // Add persistent district name labels at centroids
+        availableGeometry.forEach(({ district, geometry }) => {
+          const layer = districtLayers.get(district.id);
+          if (layer) {
+            const centroid = getCentroid(geometry);
+            if (centroid) {
+              const label = L.marker(centroid, {
+                icon: L.divIcon({
+                  className: 'district-label',
+                  html: `<span class="district-label__text">${district.name}</span>`,
+                  iconSize: [0, 0],
+                  iconAnchor: [0, 0],
+                }),
+                interactive: false,
+              });
+              label.addTo(activeMap);
+            }
+          }
+        });
+
         districtLayersRef.current = districtLayers;
 
         const bounds = keralaLayer.getBounds();
@@ -536,6 +603,39 @@ export function KeralaMap({
         }
 
         const maxCases = Math.max(...validRecords.map((t) => t.cases));
+
+        if (visualizationMode === 'heatmap') {
+          const heatPoints: [number, number, number][] = validRecords.map((taluk) => [
+            taluk.latitude,
+            taluk.longitude,
+            taluk.cases / maxCases,
+          ]);
+          const heatLayer = (L as any).heatLayer(heatPoints, {
+            radius: 35,
+            blur: 25,
+            maxZoom: 10,
+            max: 1.0,
+            minOpacity: 0.2,
+            gradient: {
+              0.0: '#3155F5',
+              0.17: '#27B8FF',
+              0.33: '#35D68A',
+              0.5: '#D7EA35',
+              0.67: '#FFC928',
+              0.83: '#FF7A21',
+              1.0: '#F52222',
+            },
+          });
+          heatLayer.addTo(map);
+          intensityLayerRef.current = heatLayer;
+          setIntensityStatus('ready');
+          return () => {
+            if (active && requestId === intensityRequestRef.current) {
+              map.removeLayer(heatLayer);
+              intensityLayerRef.current = null;
+            }
+          };
+        }
 
         const intensityLayer = L.layerGroup();
         validRecords.forEach((taluk) => {
@@ -833,20 +933,99 @@ export function KeralaMap({
   useEffect(() => {
     const isEpicentreMode = visualizationMode === 'epicentre';
     if (!isEpicentreMode) {
+      clearEpicentreLayer();
       return;
     }
 
-    // No authoritative backend Estimated Potential Epicentre API exists.
-    // Do NOT select an epicentre from clusters in React.
-    // Show empty state per backend contract.
+    if (status !== 'ready') return;
+
+    let active = true;
+    setClusterStatus('loading');
+
+    const loadEpicentre = async () => {
+      try {
+        const clustersData: Cluster[] = await fetchClusters({});
+        if (!active) return;
+
+        const map = mapRef.current;
+        if (!map) {
+          setClusterStatus('error');
+          return;
+        }
+
+        const epicentreCluster = clustersData.find((c) => c.epicentre);
+
+        if (!epicentreCluster || !epicentreCluster.epicentre) {
+          clearEpicentreLayer();
+          setClusterStatus('empty');
+          return;
+        }
+
+        const { latitude, longitude } = epicentreCluster.epicentre;
+        const epicentreLayer = L.layerGroup();
+
+        const starIcon = L.divIcon({
+          className: 'epicentre-star-marker',
+          html: `<svg width="28" height="28" viewBox="0 0 24 24" fill="#dc2626" stroke="white" stroke-width="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" /></svg>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        const epicentreMarker = L.marker([latitude, longitude], { icon: starIcon });
+        epicentreMarker.bindTooltip(
+          `<strong>Estimated Potential Epicentre</strong><br>Disease: ${epicentreCluster.disease}<br>Lat: ${latitude.toFixed(4)}<br>Lng: ${longitude.toFixed(4)}<br>Data-driven spatial estimate.<br>Requires epidemiological verification.`,
+          { sticky: true, className: 'epicentre-tooltip' }
+        );
+        epicentreMarker.on('click', () => {
+          onClusterSelectRef.current?.({
+            id: epicentreCluster.id,
+            disease: epicentreCluster.disease,
+            taluks: epicentreCluster.taluks,
+            timeWindow: epicentreCluster.timeWindow,
+            totalCases: epicentreCluster.totalCases,
+            spatialConcentration: epicentreCluster.spatialConcentration,
+            temporalSignal: epicentreCluster.temporalSignal,
+            hotspot: epicentreCluster.hotspot,
+            epicentre: epicentreCluster.epicentre,
+            geometry: epicentreCluster.geometry,
+          });
+        });
+        epicentreLayer.addLayer(epicentreMarker);
+
+        const pulseCircle = L.circle([latitude, longitude], {
+          radius: 50000,
+          color: '#dc2626',
+          fillColor: '#dc2626',
+          fillOpacity: 0.06,
+          weight: 1.5,
+          interactive: false,
+          className: 'epicentre-pulse',
+        });
+        epicentreLayer.addLayer(pulseCircle);
+
+        epicentreLayer.addTo(map);
+        epicentreLayerRef.current = epicentreLayer;
+        setClusterStatus('ready');
+      } catch {
+        if (active) {
+          clearEpicentreLayer();
+          setClusterStatus('error');
+        }
+      }
+    };
+
+    void loadEpicentre();
 
     return () => {
+      active = false;
+      clearEpicentreLayer();
     };
-  }, [visualizationMode]);
+  }, [visualizationMode, status]);
 
   const showIntensityLegend = visualizationMode === 'intensity' || visualizationMode === 'heatmap';
   const showRiskLegend = visualizationMode === 'risk';
   const showClusterLegend = visualizationMode === 'clusters';
+  const showEpicentreLegend = visualizationMode === 'epicentre' && clusterStatus !== 'idle' && clusterStatus !== 'loading';
 
   return (
     <div
@@ -858,17 +1037,17 @@ export function KeralaMap({
       <div ref={containerRef} className="kerala-map__container" />
       {status === 'loading' && (
         <div className="kerala-map__state" role="status">
-          <p>Loading map...</p>
+          <p>Loading Kerala map...</p>
         </div>
       )}
       {status === 'empty' && (
         <div className="kerala-map__state" role="status">
-          <p>No geographic data available.</p>
+          <p>No geographic boundary data available</p>
         </div>
       )}
       {status === 'error' && (
         <div className="kerala-map__state" role="alert">
-          <p>Unable to load map data. Please try again.</p>
+          <p>Unable to load Kerala boundary data</p>
         </div>
       )}
       {status === 'ready' && selectedDistrictId && talukStatus === 'loading' && (
@@ -878,7 +1057,7 @@ export function KeralaMap({
       )}
       {status === 'ready' && selectedDistrictId && talukStatus === 'empty' && (
         <div className="kerala-map__state" role="status">
-          <p>No taluk geographic data available.</p>
+          <p>No taluk geographic data available</p>
         </div>
       )}
       {status === 'ready' && selectedDistrictId && talukStatus === 'error' && (
@@ -898,7 +1077,7 @@ export function KeralaMap({
       )}
       {status === 'ready' && intensityStatus === 'error' && (
         <div className="kerala-map__state" role="alert">
-          <p>Data unavailable.</p>
+          <p>Unable to load map data.</p>
         </div>
       )}
       {status === 'ready' && riskStatus === 'loading' && (
@@ -913,7 +1092,7 @@ export function KeralaMap({
       )}
       {status === 'ready' && riskStatus === 'error' && (
         <div className="kerala-map__state" role="alert">
-          <p>Data unavailable.</p>
+          <p>Unable to load risk data.</p>
         </div>
       )}
       {status === 'ready' && clusterStatus === 'loading' && (
@@ -928,7 +1107,7 @@ export function KeralaMap({
       )}
       {status === 'ready' && clusterStatus === 'error' && (
         <div className="kerala-map__state" role="alert">
-          <p>Data unavailable.</p>
+          <p>Unable to load cluster data.</p>
         </div>
       )}
       {status === 'ready' && clusterStatus === 'insufficient-spatial-data' && (
@@ -941,23 +1120,23 @@ export function KeralaMap({
           <p>No hotspot identified.</p>
         </div>
       )}
-      {showIntensityLegend && intensityStatus === 'ready' && (
+      {showIntensityLegend && (
         <div className="kerala-map__legend" role="region" aria-label="Case intensity legend">
-          <div className="kerala-map__legend-header">Case Intensity</div>
+          <div className="kerala-map__legend-header">Case Intensity (Heatmap)</div>
           <div className="kerala-map__legend-gradient">
             <span className="kerala-map__legend-label">Low</span>
             <div className="kerala-map__legend-bar" />
             <span className="kerala-map__legend-label">High</span>
           </div>
-          <p className="kerala-map__legend-note">Visualization scale only</p>
-          <p className="kerala-map__legend-explanation">
-            Heatmap represents reported case intensity. It does not independently confirm an outbreak.
-          </p>
+          <div className="kerala-map__legend-epicentre">
+            <span className="kerala-map__legend-icon" style={{ color: '#dc2626' }}>★</span>
+            <span className="kerala-map__legend-epicentre-text">Estimated Potential Epicentre</span>
+          </div>
         </div>
       )}
-      {showRiskLegend && riskStatus === 'ready' && (
+      {showRiskLegend && (
         <div className="kerala-map__legend" role="region" aria-label="Risk legend">
-          <div className="kerala-map__legend-header">Risk</div>
+          <div className="kerala-map__legend-header">Risk Level</div>
           <div className="kerala-map__legend-items">
             <div className="kerala-map__legend-item">
               <span className="kerala-map__legend-color" style={{ backgroundColor: '#79b8bc' }} />
@@ -974,7 +1153,7 @@ export function KeralaMap({
           </div>
         </div>
       )}
-      {showClusterLegend && clusterStatus === 'ready' && (
+      {showClusterLegend && (
         <div className="kerala-map__legend" role="region" aria-label="Cluster legend">
           <div className="kerala-map__legend-header">Spatiotemporal Clusters</div>
           <div className="kerala-map__legend-items">
@@ -984,6 +1163,24 @@ export function KeralaMap({
             </div>
           </div>
           <p className="kerala-map__legend-note">A cluster is a spatial-temporal concentration requiring epidemiological interpretation.</p>
+        </div>
+      )}
+      {showEpicentreLegend && clusterStatus === 'ready' && (
+        <div className="kerala-map__legend" role="region" aria-label="Epicentre legend">
+          <div className="kerala-map__legend-header">Estimated Potential Epicentre</div>
+          <div className="kerala-map__legend-items">
+            <div className="kerala-map__legend-item">
+              <span className="kerala-map__legend-color" style={{ backgroundColor: '#dc2626', borderRadius: '50% 50% 0 50%' }} />
+              <span className="kerala-map__legend-label">Epicentre</span>
+            </div>
+          </div>
+          <p className="kerala-map__legend-note">Estimated location of highest spatiotemporal probability</p>
+        </div>
+      )}
+      {showEpicentreLegend && clusterStatus === 'empty' && (
+        <div className="kerala-map__legend" role="region" aria-label="Epicentre legend">
+          <div className="kerala-map__legend-header">Estimated Potential Epicentre</div>
+          <p className="kerala-map__legend-note">No epicentre data available</p>
         </div>
       )}
     </div>

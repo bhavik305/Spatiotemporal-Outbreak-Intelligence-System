@@ -6,6 +6,8 @@ import type { District, Taluk, SurveillanceCycle, HospitalReport, SubmissionRece
 export function HospitalPage() {
   const [district, setDistrict] = useState('');
   const [taluk, setTaluk] = useState('');
+  const [facilityType, setFacilityType] = useState('');
+  const [facilityName, setFacilityName] = useState('');
   const [disease, setDisease] = useState('');
   const [reportDate, setReportDate] = useState('');
   const [newCases, setNewCases] = useState('');
@@ -32,6 +34,12 @@ export function HospitalPage() {
         return undefined;
       case 'taluk':
         if (!value) return 'Taluk is required';
+        return undefined;
+      case 'facilityType':
+        if (!value) return 'Facility Type is required';
+        return undefined;
+      case 'facilityName':
+        if (!value) return 'Facility Name is required';
         return undefined;
       case 'disease':
         if (!value) return 'Disease is required';
@@ -74,6 +82,12 @@ export function HospitalPage() {
       case 'taluk':
         setTaluk(value);
         break;
+      case 'facilityType':
+        setFacilityType(value);
+        break;
+      case 'facilityName':
+        setFacilityName(value);
+        break;
       case 'disease':
         setDisease(value);
         break;
@@ -102,10 +116,12 @@ export function HospitalPage() {
     const newErrors: Record<string, string> = {};
     let hasErrors = false;
 
-    const fields = ['district', 'taluk', 'disease', 'reportDate', 'newCases', 'activeCases'];
+    const fields = ['district', 'taluk', 'facilityType', 'facilityName', 'disease', 'reportDate', 'newCases', 'activeCases'];
     fields.forEach(name => {
       const value = name === 'district' ? district :
                     name === 'taluk' ? taluk :
+                    name === 'facilityType' ? facilityType :
+                    name === 'facilityName' ? facilityName :
                     name === 'disease' ? disease :
                     name === 'reportDate' ? reportDate :
                     name === 'newCases' ? newCases :
@@ -177,8 +193,8 @@ export function HospitalPage() {
     e.preventDefault();
     if (!validateAll()) return;
 
-    if (!cycle || cycle.status === 'CYCLE_CLOSED') {
-      setSubmitError('Surveillance reporting for this cycle is closed.');
+    if (!cycle || cycle.status !== 'REPORTING_OPEN') {
+      setSubmitError('Reporting closed for today\'s surveillance cycle.');
       return;
     }
 
@@ -210,6 +226,8 @@ export function HospitalPage() {
   const handleNewReport = () => {
     setDistrict('');
     setTaluk('');
+    setFacilityType('');
+    setFacilityName('');
     setDisease('');
     setReportDate('');
     setNewCases('');
@@ -303,8 +321,8 @@ export function HospitalPage() {
 
   const districtOptions = districts.map(d => ({ value: d.id, label: d.name }));
   const talukOptions = taluks.map(t => ({ value: t.id, label: t.name }));
-  const cycleIsOpen = cycle?.status === 'OPEN_FOR_REPORTING';
-  const cycleIsClosed = cycle?.status === 'CYCLE_CLOSED';
+  const cycleIsOpen = cycle?.status === 'REPORTING_OPEN';
+  const cycleIsClosed = cycle?.status === 'REPORTING_CLOSED' || cycle?.status === 'PROCESSING' || cycle?.status === 'PUBLISHED';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -339,7 +357,7 @@ export function HospitalPage() {
                 </CardDescription>
               </div>
               <Badge
-                variant={cycleIsOpen ? 'success' : cycle?.status === 'PROCESSING' ? 'warning' : cycle?.status === 'ANALYSIS_READY' ? 'info' : 'error'}
+                variant={cycleIsOpen ? 'success' : cycle?.status === 'PROCESSING' ? 'warning' : cycle?.status === 'PUBLISHED' ? 'info' : 'error'}
                 dot
                 size="md"
               >
@@ -382,6 +400,33 @@ export function HospitalPage() {
           </Card>
         )}
       </section>
+
+      {/* Progress Indicator */}
+      <div className="py-4">
+        <div className="flex items-center justify-between relative">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-200 z-0"></div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-neutral-50 px-2">
+            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm shadow-sm ring-4 ring-neutral-50">1</div>
+            <span className="text-xs font-medium text-neutral-700 hidden sm:block">Facility & Location</span>
+          </div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-neutral-50 px-2">
+            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm shadow-sm ring-4 ring-neutral-50">2</div>
+            <span className="text-xs font-medium text-neutral-700 hidden sm:block">Disease Info</span>
+          </div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-neutral-50 px-2">
+            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm shadow-sm ring-4 ring-neutral-50">3</div>
+            <span className="text-xs font-medium text-neutral-700 hidden sm:block">Case Info</span>
+          </div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-2 bg-neutral-50 px-2">
+            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm shadow-sm ring-4 ring-neutral-50">4</div>
+            <span className="text-xs font-medium text-neutral-700 hidden sm:block">Review & Submit</span>
+          </div>
+        </div>
+      </div>
 
       {/* Grid Layout for Forms */}
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -433,6 +478,33 @@ export function HospitalPage() {
                   {loadingTaluks && (
                     <p className="text-xs text-neutral-500">Loading taluks...</p>
                   )}
+                  <Select
+                    label="Facility Type *"
+                    value={facilityType}
+                    onChange={(e) => handleChange('facilityType', e.target.value)}
+                    onBlur={(e) => handleBlur('facilityType', e.target.value)}
+                    placeholder="Select Facility Type"
+                    options={[
+                      { value: '', label: 'Select Facility Type' },
+                      { value: 'government_hospital', label: 'Government Hospital' },
+                      { value: 'private_hospital', label: 'Private Hospital' },
+                      { value: 'primary_health_center', label: 'Primary Health Center' },
+                      { value: 'community_health_center', label: 'Community Health Center' },
+                      { value: 'clinic', label: 'Clinic / Dispensary' }
+                    ]}
+                    required
+                    error={touched.facilityType ? errors.facilityType : undefined}
+                  />
+                  <Input
+                    label="Facility Name *"
+                    type="text"
+                    value={facilityName}
+                    onChange={(e) => handleChange('facilityName', e.target.value)}
+                    onBlur={(e) => handleBlur('facilityName', e.target.value)}
+                    placeholder="Enter full facility name"
+                    required
+                    error={touched.facilityName ? errors.facilityName : undefined}
+                  />
                 </>
               )}
             </CardContent>
@@ -559,7 +631,7 @@ export function HospitalPage() {
               
               {cycleIsClosed && (
                 <p className="text-sm text-error-600 font-medium">
-                  Surveillance reporting for this cycle is closed.
+                  Reporting closed for today's surveillance cycle.
                 </p>
               )}
               {!cycleIsOpen && !cycleIsClosed && cycle && (

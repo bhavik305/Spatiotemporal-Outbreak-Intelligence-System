@@ -16,6 +16,8 @@ interface HeaderProps {
   viewMode?: 'public' | 'detailed';
   onViewModeChange?: (mode: 'public' | 'detailed') => void;
   demoMode?: boolean;
+  onSidebarToggle?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
 export function Header({
@@ -38,13 +40,13 @@ export function Header({
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'OPEN_FOR_REPORTING':
+      case 'REPORTING_OPEN':
         return 'success';
       case 'PROCESSING':
         return 'warning';
-      case 'ANALYSIS_READY':
+      case 'PUBLISHED':
         return 'info';
-      case 'CYCLE_CLOSED':
+      case 'REPORTING_CLOSED':
         return 'neutral';
       default:
         return 'neutral';

@@ -37,8 +37,8 @@ class ApiClient {
     );
   }
 
-  get<T>(url: string, params?: Record<string, unknown>) {
-    return this.client.get<T>(url, { params });
+  get<T>(url: string, config?: { params?: Record<string, unknown> }) {
+    return this.client.get<T>(url, config);
   }
 
   post<T>(url: string, data?: unknown) {

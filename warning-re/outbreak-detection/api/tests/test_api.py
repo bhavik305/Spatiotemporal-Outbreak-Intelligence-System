@@ -167,3 +167,102 @@ def test_no_nan_in_map_response():
     text = client.get("/api/dashboard/map").text
     for bad in ["NaN","Infinity","-Infinity"]:
         assert bad not in text
+
+
+def test_surveillance_cycle_lifecycle():
+    # 1. Simulate 11:59 AM IST (REPORTING_OPEN)
+    sim_open = "2026-10-02T11:59:00+05:30"
+    r = client.post("/api/surveillance/simulate", json={"time": sim_open})
+    assert r.status_code == 200
+    
+    cycle_info = client.get("/api/surveillance/cycle/current").json()
+    assert cycle_info["status"] == "REPORTING_OPEN"
+    assert cycle_info["reporting_open"] is True
+    
+    # 2. Submit hospital reports from multiple hospitals during open window
+    report1 = {
+        "districtId": "ernakulam",
+        "talukId": "kanayannur",
+        "facilityType": "government_hospital",
+        "facilityName": "General Hospital Ernakulam",
+        "disease": "dengue",
+        "reportDate": "2026-10-02",
+        "newCases": 25,
+        "activeCases": 40,
+        "remarks": "Increase in fever admissions"
+    }
+    
+    # Validate report
+    val_res = client.post("/api/surveillance/reports/validate", json=report1)
+    assert val_res.status_code == 200
+    assert val_res.json()["districtName"] == "Ernakulam"
+    assert val_res.json()["talukName"] == "Kanayannur"
+    
+    # Submit report 1
+    sub_res1 = client.post("/api/surveillance/reports", json=report1)
+    assert sub_res1.status_code == 200
+    r1 = sub_res1.json()
+    assert r1["status"] == "Accepted"
+    assert r1["cycleId"] == "CYCLE-20261002"
+    assert r1["newCases"] == 25
+    
+    # Submit report 2 from another hospital in same cycle
+    report2 = {
+        "districtId": "kozhikode",
+        "talukId": "kozhikode",
+        "facilityType": "community_health_center",
+        "facilityName": "CHC Kozhikode",
+        "disease": "dengue",
+        "reportDate": "2026-10-02",
+        "newCases": 18,
+        "activeCases": 22
+    }
+    sub_res2 = client.post("/api/surveillance/reports", json=report2)
+    assert sub_res2.status_code == 200
+    
+    # Check cycle reports received
+    status_res = client.get("/api/surveillance/cycle/CYCLE-20261002/status").json()
+    assert status_res["totalReports"] >= 2
+    assert status_res["taluksReporting"] >= 2
+    
+    # Snapshot principle: before 12:05 PM, the map does not mix today's cycle date
+    map_pre = client.get("/api/dashboard/map?date=2026-10-02").json()
+    assert len(map_pre["taluks"]) == 0
+    
+    # 3. Simulate 12:00 PM IST (REPORTING_CLOSED)
+    sim_closed = "2026-10-02T12:00:00+05:30"
+    client.post("/api/surveillance/simulate", json={"time": sim_closed})
+    cycle_closed = client.get("/api/surveillance/cycle/current").json()
+    assert cycle_closed["status"] in ("REPORTING_CLOSED", "PROCESSING")
+    assert cycle_closed["reporting_open"] is False
+    
+    # Rejection of submissions after 12:00 PM
+    sub_reject = client.post("/api/surveillance/reports", json=report1)
+    assert sub_reject.status_code == 400
+    assert "Reporting closed" in sub_reject.json()["detail"]
+    
+    # 4. Simulate 12:02 PM IST (PROCESSING)
+    sim_proc = "2026-10-02T12:02:00+05:30"
+    client.post("/api/surveillance/simulate", json={"time": sim_proc})
+    cycle_proc = client.get("/api/surveillance/cycle/current").json()
+    assert cycle_proc["status"] == "PROCESSING"
+    
+    # 5. Simulate 12:05 PM IST (PUBLISHED)
+    sim_pub = "2026-10-02T12:05:00+05:30"
+    client.post("/api/surveillance/simulate", json={"time": sim_pub})
+    cycle_pub = client.get("/api/surveillance/cycle/current").json()
+    assert cycle_pub["status"] == "PUBLISHED"
+    
+    # Verify map and dashboard now include the newly published cycle
+    map_post = client.get("/api/dashboard/map?date=2026-10-02").json()
+    assert len(map_post["taluks"]) >= 2
+    taluk_names = [t["name"] for t in map_post["taluks"]]
+    assert "Kanayannur" in taluk_names or "kanayannur" in [t["id"] for t in map_post["taluks"]]
+    
+    # Check Kanayannur cases in map data
+    kan_data = next((t for t in map_post["taluks"] if "kanayannur" in t["id"].lower()), None)
+    assert kan_data is not None
+    assert kan_data["cases"] == 25
+    
+    # Reset simulation
+    client.post("/api/surveillance/simulate", json={"reset": True})

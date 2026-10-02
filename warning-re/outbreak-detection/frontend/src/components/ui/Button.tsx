@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode, ForwardRefExoticComponent, RefAttributes } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   leftIcon?: ReactNode;
@@ -23,14 +23,22 @@ export const Button = Object.assign(
     children,
     ...props
   }: ButtonProps) {
-    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles =
+      'inline-flex items-center justify-center font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variantStyles = {
-      primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
-      secondary: 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 active:bg-neutral-300 border border-neutral-200',
-      outline: 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 active:bg-primary-100',
-      ghost: 'text-primary-600 hover:bg-primary-50 active:bg-primary-100',
-      danger: 'bg-error-600 text-white hover:bg-error-700 active:bg-error-800',
+      primary:
+        'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-sm hover:shadow focus-visible:ring-primary-500',
+      secondary:
+        'bg-neutral-100 text-neutral-800 hover:bg-neutral-200 active:bg-neutral-300 border border-neutral-200 focus-visible:ring-neutral-500',
+      outline:
+        'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 active:bg-primary-100 focus-visible:ring-primary-500',
+      ghost:
+        'text-primary-600 hover:bg-primary-50 active:bg-primary-100 focus-visible:ring-primary-500',
+      danger:
+        'bg-error-600 text-white hover:bg-error-700 active:bg-error-800 shadow-sm hover:shadow focus-visible:ring-error-500',
+      success:
+        'bg-success-600 text-white hover:bg-success-700 active:bg-success-800 shadow-sm hover:shadow focus-visible:ring-success-500',
     };
 
     const sizeStyles = {
@@ -43,7 +51,14 @@ export const Button = Object.assign(
 
     return (
       <button
-        className={clsx(baseStyles, variantStyles[variant], sizeStyles[size], widthStyles, className)}
+        className={clsx(
+          baseStyles,
+          variantStyles[variant],
+          sizeStyles[size],
+          widthStyles,
+          'rounded-lg',
+          className
+        )}
         disabled={disabled || loading}
         {...props}
       >
@@ -63,7 +78,7 @@ export const Button = Object.assign(
           </>
         )}
       </button>
-    )
+    );
   },
   {
     displayName: 'Button',

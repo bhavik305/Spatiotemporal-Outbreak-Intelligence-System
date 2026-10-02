@@ -38,7 +38,7 @@ export interface SurveillanceCycle {
   lastUpdate: string;
 }
 
-export type CycleStatus = 'OPEN_FOR_REPORTING' | 'PROCESSING' | 'ANALYSIS_READY' | 'CYCLE_CLOSED';
+export type CycleStatus = 'REPORTING_OPEN' | 'REPORTING_CLOSED' | 'PROCESSING' | 'PUBLISHED';
 
 export interface DashboardSummary {
   activeSurveillance: {
