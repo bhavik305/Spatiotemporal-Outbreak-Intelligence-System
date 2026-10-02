@@ -804,12 +804,18 @@ export function KeralaMap({
           return;
         }
 
-        let filteredClusters = clusters;
+        let filteredClusters = clusters || [];
 
         if (selectedTalukIdRef.current) {
-          filteredClusters = clusters.filter((cluster) =>
-            cluster.taluks.includes(selectedTalukIdRef.current!)
+          const tIdNorm = selectedTalukIdRef.current.toLowerCase().replace(/[\s_]+/g, '');
+          filteredClusters = filteredClusters.filter((cluster) =>
+            cluster.taluks?.some((t) => t.toLowerCase().replace(/[\s_]+/g, '') === tIdNorm)
           );
+        }
+
+        if (filteredClusters.length === 0) {
+          setClusterStatus('empty');
+          return;
         }
 
         const clusterLayer = L.layerGroup();
@@ -884,7 +890,7 @@ export function KeralaMap({
         });
 
         if (!hasValidSpatialData) {
-          setClusterStatus('insufficient-spatial-data');
+          setClusterStatus('empty');
           return;
         }
 
